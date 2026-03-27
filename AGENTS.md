@@ -70,7 +70,7 @@ See `codex-rs/tui/styles.md`.
 
 ## TUI code conventions
 
-- When a change lands in `codex-rs/tui` and `codex-rs/tui_app_server` has a parallel implementation of the same behavior, reflect the change in `codex-rs/tui_app_server` too unless there is a documented reason not to.
+- When a change lands in `codex-rs/tui`, treat it as the app-server-backed TUI implementation and keep related behavior aligned there unless there is a documented reason not to.
 
 - Use concise styling helpers from ratatui’s Stylize trait.
   - Basic spans: use "text".into()

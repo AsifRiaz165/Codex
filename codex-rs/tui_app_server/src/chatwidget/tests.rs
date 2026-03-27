@@ -7293,7 +7293,7 @@ async fn slash_memory_drop_reports_stubbed_feature() {
     match event {
         AppEvent::InsertHistoryCell(cell) => {
             let rendered = lines_to_single_string(&cell.display_lines(80));
-            assert!(rendered.contains("Memory maintenance: Not available in app-server TUI yet."));
+            assert!(rendered.contains("Memory maintenance: Not available in TUI yet."));
         }
         other => panic!("expected InsertHistoryCell error, got {other:?}"),
     }
@@ -7324,7 +7324,7 @@ async fn slash_memory_update_reports_stubbed_feature() {
     match event {
         AppEvent::InsertHistoryCell(cell) => {
             let rendered = lines_to_single_string(&cell.display_lines(80));
-            assert!(rendered.contains("Memory maintenance: Not available in app-server TUI yet."));
+            assert!(rendered.contains("Memory maintenance: Not available in TUI yet."));
         }
         other => panic!("expected InsertHistoryCell error, got {other:?}"),
     }

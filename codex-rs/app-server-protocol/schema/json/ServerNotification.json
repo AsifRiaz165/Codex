@@ -2245,6 +2245,14 @@
         "id": {
           "type": "string"
         },
+        "metadata": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "description": "Arbitrary client-defined metadata.",
+          "type": "object"
+        },
         "modelProvider": {
           "description": "Model provider used for this thread (for example, 'openai').",
           "type": "string"

@@ -163,6 +163,7 @@ async fn test_config() -> Config {
     let codex_home = std::env::temp_dir();
     ConfigBuilder::default()
         .codex_home(codex_home.clone())
+        .fallback_cwd(Some(PathBuf::from("/tmp/project")))
         .build()
         .await
         .expect("config")
@@ -11651,7 +11652,14 @@ async fn default_terminal_title_refreshes_when_spinner_state_changes() {
 
     chat.refresh_terminal_title();
 
-    assert_eq!(chat.last_terminal_title, Some(format!("⠋ {project}")));
+    // test_config sets fallback_cwd, so the title goes through truncation.
+    assert_eq!(
+        chat.last_terminal_title,
+        Some(format!(
+            "⠋ {}",
+            ChatWidget::truncate_terminal_title_part(project, 24)
+        ))
+    );
 }
 
 #[tokio::test]
@@ -11878,6 +11886,64 @@ async fn status_line_model_with_reasoning_includes_fast_for_gpt54_only() {
     assert_eq!(
         status_line_text(&chat),
         Some(format!("gpt-5.3-codex xhigh · 100% left · {test_cwd}"))
+    );
+}
+
+#[tokio::test]
+async fn status_line_model_with_reasoning_updates_on_mode_switch_without_manual_refresh() {
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(Some("gpt-5.3-codex")).await;
+    chat.set_feature_enabled(Feature::CollaborationModes, true);
+    chat.config.tui_status_line = Some(vec!["model-with-reasoning".to_string()]);
+    chat.set_reasoning_effort(Some(ReasoningEffortConfig::High));
+
+    assert_eq!(
+        status_line_text(&chat),
+        Some("gpt-5.3-codex high".to_string())
+    );
+
+    let plan_mask = collaboration_modes::plan_mask(chat.models_manager.as_ref())
+        .expect("expected plan collaboration mode");
+    chat.set_collaboration_mask(plan_mask);
+
+    assert_eq!(
+        status_line_text(&chat),
+        Some("gpt-5.3-codex medium".to_string())
+    );
+
+    let default_mask = collaboration_modes::default_mask(chat.models_manager.as_ref())
+        .expect("expected default collaboration mode");
+    chat.set_collaboration_mask(default_mask);
+
+    assert_eq!(
+        status_line_text(&chat),
+        Some("gpt-5.3-codex high".to_string())
+    );
+}
+
+#[tokio::test]
+async fn status_line_model_with_reasoning_plan_mode_footer_snapshot() {
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
+
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(Some("gpt-5.3-codex")).await;
+    chat.show_welcome_banner = false;
+    chat.set_feature_enabled(Feature::CollaborationModes, true);
+    chat.config.tui_status_line = Some(vec!["model-with-reasoning".to_string()]);
+    chat.set_reasoning_effort(Some(ReasoningEffortConfig::High));
+
+    let plan_mask = collaboration_modes::plan_mask(chat.models_manager.as_ref())
+        .expect("expected plan collaboration mode");
+    chat.set_collaboration_mask(plan_mask);
+
+    let width = 80;
+    let height = chat.desired_height(width);
+    let mut terminal = Terminal::new(TestBackend::new(width, height)).expect("create terminal");
+    terminal
+        .draw(|f| chat.render(f.area(), f.buffer_mut()))
+        .expect("draw plan-mode footer");
+    assert_snapshot!(
+        "status_line_model_with_reasoning_plan_mode_footer",
+        terminal.backend()
     );
 }
 
